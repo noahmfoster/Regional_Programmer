@@ -1,0 +1,1 @@
+#This file will hold the character recognition portion of the code (CNN or Resnet with data)
