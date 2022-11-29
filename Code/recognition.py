@@ -47,9 +47,12 @@ def get_resnet():
     x = scale_layer(x)
     x = pretrained_model(x, training = False)
     x = tf.keras.layers.Flatten()(x)
+    x = tf.keras.layers.Dense(624, activation = 'relu')(x)
+    outputs= tf.keras.layers.Dense(6, activation = 'softmax')(x)
+
   #  x = keras.layers.GlobalAveragePooling2D()(x)
-    x = keras.layers.Dropout(0.2)(x)  # Regularize with dropout
-    outputs = keras.layers.Dense(1)(x)
+    #x = keras.layers.Dropout(0.2)(x)  # Regularize with dropout
+    #outputs = keras.layers.Dense(1)(x)
     #resnet_model.add(pretrained_model)
 
     #Add additional layers for further training on new data

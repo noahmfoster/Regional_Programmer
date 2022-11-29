@@ -47,7 +47,11 @@ def get_characters(file_path):
 
     #ds = builder.as_dataset(as_supervised = True)
 
+    #Using 70% train, 10% validate, 20% test
+
     train_ds = builder.as_dataset(as_supervised = True, split='train', shuffle_files=True)
+    validation_ds = builder.as_dataset(as_supervised = True, split='validate', shuffle_files=True)
+
     test_ds= builder.as_dataset(as_supervised=True, split='test', shuffle_files=True)
     #val_ds = train_ds.take(val_size)
 
@@ -62,13 +66,13 @@ def get_characters(file_path):
     size = (224, 224)
 
     train_ds = train_ds.map(lambda x, y: (tf.image.resize(x, size), y))
-    #validation_ds = validation_ds.map(lambda x, y: (tf.image.resize(x, size), y))
+    validation_ds = validation_ds.map(lambda x, y: (tf.image.resize(x, size), y))
     test_ds = test_ds.map(lambda x, y: (tf.image.resize(x, size), y))
 
     batch_size = 32
 
     train_ds = train_ds.cache().batch(batch_size).prefetch(buffer_size=10)
-    #validation_ds = validation_ds.cache().batch(batch_size).prefetch(buffer_size=10)
+    validation_ds = validation_ds.cache().batch(batch_size).prefetch(buffer_size=10)
     test_ds = test_ds.cache().batch(batch_size).prefetch(buffer_size=10)
 
 
@@ -76,7 +80,7 @@ def get_characters(file_path):
 
 
 
-    return  train_ds, test_ds #X0,Y0,X1,Y1,D0, D1
+    return  train_ds, validation_ds, test_ds #X0,Y0,X1,Y1,D0, D1
 
 
 ###############################################################################################
