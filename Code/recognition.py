@@ -32,7 +32,7 @@ def get_resnet():
     pretrained_model= tf.keras.applications.ResNet50(include_top=False,
                     input_shape=(224,224,3),
                     pooling='avg',classes=6,
-                    weights='imagenet')
+                    weights='vggface2')
 
     #for layer in pretrained_model.layers:
      #       layer.trainable=False
@@ -47,7 +47,7 @@ def get_resnet():
     x = scale_layer(x)
     x = pretrained_model(x, training = False)
     x = tf.keras.layers.Flatten()(x)
-    x = tf.keras.layers.Dense(624, activation = 'relu')(x)
+    #x = tf.keras.layers.Dense(624, activation = 'relu')(x)
     outputs= tf.keras.layers.Dense(6, activation = 'softmax')(x)
 
   #  x = keras.layers.GlobalAveragePooling2D()(x)
