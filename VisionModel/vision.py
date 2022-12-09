@@ -53,7 +53,7 @@ def get_models(model_path = None):
     print('CLIP model loaded')
     # custom transfer model for detecting characters
     if model_path is None:
-        model_path = data_path = os.path.dirname(os.path.abspath(__file__)) +"/"
+        model_path  = os.path.dirname(os.path.abspath(__file__)) +"/"
     face_model = load_model(
         model_path + 'transfer_learning_trained_the_office_cnn_model.h5')
 
@@ -65,6 +65,7 @@ def get_models(model_path = None):
     return clip_model, processor, face_model, facecascade
 
 def run_vision_model(file, clip_model, processor, face_model, facecascade, nouns, words):
+    print('running vision model')
 
     assert file.endswith("png") or file.endswith("jpg") or file.endswith("jpeg"), "Image file must be of type .png, .jpg, or .jpeg"
 
@@ -77,6 +78,7 @@ def run_vision_model(file, clip_model, processor, face_model, facecascade, nouns
     all_faces = facecascade.detectMultiScale(imgtest, 
         scaleFactor=1.1, minNeighbors=5)
 
+    print(f"Looping through {len(all_faces)} faces")
     # loop through each face and get each character
     character_vector = []
     for i in range(len(all_faces)):
@@ -96,10 +98,12 @@ def run_vision_model(file, clip_model, processor, face_model, facecascade, nouns
             x = image.img_to_array(resized_image)
             x = np.expand_dims(x, axis=0)
             x = utils.preprocess_input(x, version=1)
+            print(x)
 
             # making prediction
             predicted_prob = face_model.predict(x)
             character_vector += [class_list[predicted_prob[0].argmax()]]
+            print('character: ', class_list[predicted_prob[0].argmax()])
             
         inputs = processor(text=nouns, images=imgtest, return_tensors="pt", padding=True)
 
@@ -112,6 +116,8 @@ def run_vision_model(file, clip_model, processor, face_model, facecascade, nouns
         sentence = [words[k] for k in ind]
         plt.imshow(cv2.cvtColor(face_detect, cv2.COLOR_BGR2RGB))
         plt.show()
+        print('character: ', character_vector)
+        print('objects: ', sentence)
         
         return character_vector, sentence # return the character and the top 5 objects detected in the image
 

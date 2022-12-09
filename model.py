@@ -36,6 +36,7 @@ class AtRM():
 
 
         self.nouns, self.words = get_nouns()
+
         if verbose:
             print("Vision models loaded.")
             print("Loading Language models...")
@@ -62,7 +63,8 @@ class AtRM():
         return f"Your Assistant (to) the Regional Manager is here!"
 
     def __call__(self, img_file, first_character = "", first_line = "", include_nouns = True, include_prompt = True):
-        character_vector, nouns = run_vision_model(
+        print(
+            run_vision_model(
             img_file,
             self.clip_model,
             self.processor,
@@ -71,6 +73,10 @@ class AtRM():
             self.nouns,
             self.words
         )
+        )
+
+        character_vector, nouns = [],["cat"]
+
         prompt = ScenePrompt(
             characters = character_vector,
             nouns = nouns if include_nouns else [],
@@ -82,13 +88,14 @@ class AtRM():
             prompt.to_text(),
             self.lm,
             self.tokenizer,
-            self.device
+            device = self.device
         )
 
         if include_prompt:
             return text_w_prompt
         else:
             return text_w_prompt[len(prompt.to_text()):]
+
 
 
 
