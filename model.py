@@ -31,10 +31,9 @@ class ScenePrompt():
 class AtRM():
     def __init__(self, verbose = False, lm = "tuned"):
         if verbose: print("Loading Vision models...")
-        try:
-            self.clip_model, self.processor, self.face_model, self.facecascade = get_models()
-        except (FileNotFoundError, OSError):
-            print("Something is missing!")
+
+        self.clip_model, self.processor, self.face_model, self.facecascade = get_models()
+
 
         self.nouns, self.words = get_nouns()
         if verbose:
@@ -47,7 +46,6 @@ class AtRM():
 
         self.device = "cuda" if is_available() else "cpu"
         self.lm.to(self.device)
-        self.tokenizer.to(self.device)
     
     def init_overide(self, clip_model = None, processor = None, face_model = None, facecascade = None, nouns = None, words = None, lm = None, tokenizer = None, device = None):
         if clip_model: self.clip_model = clip_model

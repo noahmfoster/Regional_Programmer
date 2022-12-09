@@ -46,17 +46,20 @@ def get_nouns():
     return nouns, words
 
 
-def get_models():
+def get_models(model_path = None):
     # pretrained clip model and processor for object detection
     clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
     processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
     print('CLIP model loaded')
     # custom transfer model for detecting characters
+    if model_path is None:
+        model_path = data_path = os.path.dirname(os.path.abspath(__file__)) +"/"
     face_model = load_model(
-        'transfer_learning_trained' +
-        '_the_office_cnn_model.h5')
+        model_path + 'transfer_learning_trained_the_office_cnn_model.h5')
 
     # pretrained model to detect faces
+
+
     facecascade =  cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
     return clip_model, processor, face_model, facecascade
