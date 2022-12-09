@@ -21,7 +21,7 @@ from tensorflow.keras.models import load_model
 
 
 
-data_path = '../Data/'
+data_path = os.path.dirname(os.path.abspath(__file__)) + '/../Data/'
 
 
 # load the training labels

@@ -1,0 +1,5 @@
+For NOAH:
+Finish building the pipeline with Chloe
+write language model stuff in the final report
+Perplexity scoring the language model (and finishing the buildingmodel file)
+make it so that a normal user can use the model on colab or something equivilent

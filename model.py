@@ -1,4 +1,5 @@
 from VisionModel.vision import get_models, get_nouns, run_vision_model
+from LanguageModel.Language import get_language_model, generate_text
 from torch.cuda import is_available
 import tensorflow as tf
 
@@ -40,17 +41,21 @@ class AtRM():
         if verbose: print("Loading Vision models...")
         self.clip_model, self.processor, self.face_model, self.facecascade = get_models()
         self.nouns, self.words = get_nouns()
-
         if verbose:
             print("Vision models loaded.")
             print("Loading Language models...")
 
+        self.lm, self.tokenizer = get_language_model()
+        if verbose: print("Language models loaded.")
+
         self.device = "cuda" if is_available() else "cpu"
+        self.lm.to(self.device)
+        self.tokenizer.to(self.device)
 
     def __str__(self) -> str:
         return f"Your Assistant (to) the Regional Manager is here"
 
-    def __call__(self, img_file, first_line = "", first_character = ""):
+    def __call__(self, img_file, first_line = "", first_character = "", include_nouns = True, include_prompt = True):
         character_vector, nouns = run_vision_model(
             img_file,
             self.clip_model,
@@ -62,10 +67,23 @@ class AtRM():
         )
         prompt = ScenePrompt(
             characters = character_vector,
-            nouns = nouns,
+            nouns = nouns if include_nouns else [],
             first_line = first_line,
             first_character = first_character
         )
+
+        text_w_prompt = generate_text(
+            prompt.to_text(),
+            self.lm,
+            self.tokenizer,
+            self.device
+        )
+
+        if include_prompt:
+            return text_w_prompt
+        else:
+            return text_w_prompt[len(prompt.to_text()):]
+
 
 
 
