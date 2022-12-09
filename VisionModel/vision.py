@@ -33,16 +33,17 @@ class_list = [value for _, value in class_dictionary.items()]
 # print(class_list)
 
 # load list of 73 nouns 
+
 def get_nouns():
     with open(data_path + 'nouns.csv', newline='') as f:
         reader = csv.reader(f)
-        data = list(reader)
+        words = list(reader)
 
-    data = [line[0] for line in data]
+    words = [line[0] for line in words]
 
-    nouns = ['a photo of a ' + s for s in data]
+    nouns = ['a photo of a ' + s for s in words]
 
-    return nouns
+    return nouns, words
 
 
 def get_models():
@@ -60,7 +61,7 @@ def get_models():
 
     return clip_model, processor, face_model, facecascade
 
-def run_vision_model(file, clip_model, processor, face_model, facecascade, nouns):
+def run_vision_model(file, clip_model, processor, face_model, facecascade, nouns, words):
 
     assert file.endswith("png") or file.endswith("jpg") or file.endswith("jpeg"), "Image file must be of type .png, .jpg, or .jpeg"
 
@@ -97,18 +98,17 @@ def run_vision_model(file, clip_model, processor, face_model, facecascade, nouns
             predicted_prob = face_model.predict(x)
             character_vector += [class_list[predicted_prob[0].argmax()]]
             
-    inputs = processor(text=nouns, images=imgtest, return_tensors="pt", padding=True)
+        inputs = processor(text=nouns, images=imgtest, return_tensors="pt", padding=True)
 
-    outputs = clip_model(**inputs)
-    logits_per_image = outputs.logits_per_image # this is the image-text similarity score
-    probs = logits_per_image.softmax(dim=1) # we can take the softmax to get the label probabilitie
-    #print(probs)
-    #ind = torch.topk(probs.flatten(), 3).indices
-    ind = probs.squeeze().argsort()[-5:]
-    sentence = [data[k] for k in ind]
-    plt.imshow(cv2.cvtColor(face_detect, cv2.COLOR_BGR2RGB))
-    plt.show()
-    print(character_vector)
-    print(sentence)
-
+        outputs = clip_model(**inputs)
+        logits_per_image = outputs.logits_per_image # this is the image-text similarity score
+        probs = logits_per_image.softmax(dim=1) # we can take the softmax to get the label probabilitie
+        #print(probs)
+        #ind = torch.topk(probs.flatten(), 3).indices
+        ind = probs.squeeze().argsort()[-5:]
+        sentence = [words[k] for k in ind]
+        plt.imshow(cv2.cvtColor(face_detect, cv2.COLOR_BGR2RGB))
+        plt.show()
+        
+        return character_vector, sentence # return the character and the top 5 objects detected in the image
 
