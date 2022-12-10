@@ -7,6 +7,10 @@ import numpy as np
 
 class AtRM():
     def __init__(self, verbose = False, lm = "tuned", in_context_learing = False):
+        '''Full Assistant to the Regional Manager model.
+        lm: "tuned", "untuned", "GPTJ"
+        verbose: print out model loading progress
+        in_context_learing: Collect Training Data to provide context to the model'''
         if verbose: print("Loading Vision models...")
 
         self.clip_model, self.processor, self.face_model, self.facecascade = get_models()
@@ -32,6 +36,7 @@ class AtRM():
             self.in_context_learing = False
     
     def init_overide(self, clip_model = None, processor = None, face_model = None, facecascade = None, nouns = None, words = None, lm = None, tokenizer = None, device = None):
+        '''For debugging purposes, allows you to overide the models with your own.'''
         if clip_model: self.clip_model = clip_model
         if processor: self.processor = processor
         if face_model: self.face_model = face_model

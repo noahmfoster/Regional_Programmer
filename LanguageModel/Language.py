@@ -38,7 +38,7 @@ def get_language_model(model_name = 'trained', model_path = ""):
         return get_tuned(model_path=model_path)
     elif model_name == 'untuned':
         return get_untuned()
-    elif model_name == 'GPTJ':
+    elif model_name == 'GPTJ' or model_name =='gptj':
         return get_GPTJ()
     else:
         return get_tuned(model_path=model_path)
