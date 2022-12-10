@@ -98,7 +98,7 @@ def run_vision_model(file, clip_model, processor, face_model, facecascade, nouns
             x = image.img_to_array(resized_image)
             x = np.expand_dims(x, axis=0)
             x = utils.preprocess_input(x, version=1)
-            print(x)
+            # print(x)
 
             # making prediction
             predicted_prob = face_model.predict(x)

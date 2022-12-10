@@ -5,6 +5,15 @@ from transformers import GPT2LMHeadModel
 from transformers import GPTJForCausalLM
 
 import os
+import numpy as np
+import pandas as pd
+
+import nltk
+
+nltk.download('punkt')
+nltk.download('averaged_perceptron_tagger')
+
+data_path = os.path.dirname(os.path.abspath(__file__)) + '/../Data/'
 
 
 def get_tuned(model_path = ""):
@@ -45,3 +54,60 @@ def generate_text(prompt, model, tokenizer, max_length=200, device = 'cuda:0'):
         temperature=0.8
     )
     return tokenizer.decode(output[0], skip_special_tokens=True)
+
+class ScenePrompt():
+    def __init__(self, characters = [], nouns = [], lines = [], gen_nouns = False): # lines is a list of tuples of (speaker, line)
+        
+        if lines:
+            self.characters = list(set([character for character, _ in lines]))
+        else:
+            self.characters = characters
+
+
+        self.nouns = nouns
+        self.lines = lines
+
+        text = " ".join([line for _, line in lines])
+
+        if gen_nouns:
+            nouns += [word for (word, pos) in nltk.pos_tag(nltk.word_tokenize(text)) if pos[0] == 'N' and (pos != 'NNP')]
+
+        self.lines = lines if lines else [(np.random.choice(self.characters, 1)[0] if self.characters else "Dwight", '')]
+        
+    def to_text(self):
+        output = f"Characters: " + ", ".join(set(self.characters)) + "\n\n"
+
+        if self.nouns:
+            output += "Nouns: " + ", ".join(self.nouns) + "\n\n"
+
+        output += "----TEXT----" + ("\n\n" if self.lines else "")
+        self.len_prompt = len(output)
+
+        output += "\n\n".join(
+            [
+                f"{character}: {line}"
+                for character, line in self.lines
+            ]
+        )
+        while output[-1] in {"\n", " "}:
+            output = output[:-1]
+
+        return output
+
+def get_prompts(data_file = data_path + 'The-Office-Lines-V4.csv'):
+    data = pd.read_csv(data_file)
+    data = data.drop("Unnamed: 6", axis=1)
+
+    breaks = [0] + [i + 1 for i, scene_num in enumerate(data["scene"][1:]) if scene_num != data["scene"][i]] + [len(data["scene"])]
+    n_scenes = len(breaks) - 1 # I added an extra "break" for the end of all the lines
+
+    scenes = [
+        ScenePrompt(
+            characters = [],
+            nouns = [],
+            lines = list(zip(data["speaker"][breaks[i]:breaks[i+1]], data["line"][breaks[i]:breaks[i+1]])),
+            gen_nouns = True
+        )
+        for i in range(n_scenes)
+    ]
+    return scenes

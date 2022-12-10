@@ -1,35 +1,12 @@
 from VisionModel.vision import get_models, get_nouns, run_vision_model
-from LanguageModel.Language import get_language_model, generate_text
+from LanguageModel.Language import get_language_model, generate_text, ScenePrompt, get_prompts
 from torch.cuda import is_available
-import tensorflow as tf
 
-class ScenePrompt():
-    def __init__(self, characters = [], nouns = [], first_line = "", first_character = ""): # lines is a list of tuples of (speaker, line)
-        self.characters = characters if type(characters) == list else [characters]
+import numpy as np
 
-        self.nouns = nouns 
-
-        if first_character:
-            self.first = first_character
-        elif self.characters: self.first = tf.random.shuffle(self.characters)[0]
-        else: self.first = "Dwight:"
-
-        self.first_line = f"{self.first}:" + (f" {first_line}" if first_line else "")
-
-    def to_text(self):
-        output = f"Characters: " + ", ".join(set(self.characters)) + "\n\n"
-
-        if self.nouns:
-            output += "Nouns: " + ", ".join(self.nouns) + "\n\n"
-
-        output += "----TEXT----"
-
-        output += "\n\n" + self.first_line
-
-        return output
 
 class AtRM():
-    def __init__(self, verbose = False, lm = "tuned"):
+    def __init__(self, verbose = False, lm = "tuned", in_context_learing = False):
         if verbose: print("Loading Vision models...")
 
         self.clip_model, self.processor, self.face_model, self.facecascade = get_models()
@@ -47,6 +24,12 @@ class AtRM():
 
         self.device = "cuda" if is_available() else "cpu"
         self.lm.to(self.device)
+
+        if in_context_learing:
+            self.in_context_learing = True
+            self.context = get_prompts()
+        else:
+            self.in_context_learing = False
     
     def init_overide(self, clip_model = None, processor = None, face_model = None, facecascade = None, nouns = None, words = None, lm = None, tokenizer = None, device = None):
         if clip_model: self.clip_model = clip_model
@@ -62,9 +45,9 @@ class AtRM():
     def __str__(self) -> str:
         return f"Your Assistant (to) the Regional Manager is here!"
 
-    def __call__(self, img_file, first_character = "", first_line = "", include_nouns = True, include_prompt = True):
-        print(
-            run_vision_model(
+    def __call__(self, img_file, first_character = "", first_line = "", include_nouns = True, include_prompt = True, n_context_scene = 0):
+        
+        character_vector, nouns = run_vision_model(
             img_file,
             self.clip_model,
             self.processor,
@@ -73,28 +56,35 @@ class AtRM():
             self.nouns,
             self.words
         )
-        )
 
-        character_vector, nouns = [],["cat"]
-
+        
         prompt = ScenePrompt(
             characters = character_vector,
             nouns = nouns if include_nouns else [],
-            first_line = first_line,
-            first_character = first_character
+            lines = [(first_character, first_line)] if first_character != "" else []
         )
+        
+        text = ''
+        if self.in_context_learing:
+            for _ in range(n_context_scene):
+                text += self.context[np.random.randint(len(self.context))].to_text()
+                text += "\n\n New Scene \n\n"
 
-        text_w_prompt = generate_text(
-            prompt.to_text(),
+        garbage = len(text)
+
+        text += prompt.to_text()
+
+        output_w_prompt = generate_text(
+            text,
             self.lm,
             self.tokenizer,
             device = self.device
         )
 
         if include_prompt:
-            return text_w_prompt
+            return output_w_prompt
         else:
-            return text_w_prompt[len(prompt.to_text()):]
+            return output_w_prompt[prompt.len_prompt + garbage:]
 
 
 
