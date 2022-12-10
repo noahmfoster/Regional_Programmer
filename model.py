@@ -34,6 +34,8 @@ class AtRM():
             self.context = get_prompts()
         else:
             self.in_context_learing = False
+
+        self.last_prompt = None
     
     def init_overide(self, clip_model = None, processor = None, face_model = None, facecascade = None, nouns = None, words = None, lm = None, tokenizer = None, device = None):
         '''For debugging purposes, allows you to overide the models with your own.'''
@@ -51,23 +53,37 @@ class AtRM():
         return f"Your Assistant (to) the Regional Manager is here!"
 
     def __call__(self, img_file, first_character = "", first_line = "", include_nouns = True, include_prompt = True, n_context_scene = 0):
-        
-        character_vector, nouns = run_vision_model(
-            img_file,
-            self.clip_model,
-            self.processor,
-            self.face_model,
-            self.facecascade,
-            self.nouns,
-            self.words
-        )
-
-        
-        prompt = ScenePrompt(
+        character_vector, nouns = self.promptify_img(img_file)
+        self.last_prompt = ScenePrompt(
             characters = character_vector,
             nouns = nouns if include_nouns else [],
             lines = [(first_character, first_line)] if first_character != "" else []
         )
+
+        return self.generate_text(self.last_prompt, include_prompt = include_prompt, n_context_scene = n_context_scene)
+
+
+
+    
+    def promptify_img(self, img_file):
+        try:
+            character_vector, nouns = run_vision_model(
+                img_file,
+                self.clip_model,
+                self.processor,
+                self.face_model,
+                self.facecascade,
+                self.nouns,
+                self.words
+            )
+        except TypeError: # For some images, the ouput of run_vision_model is None, which raises a TypeError. Not sure why this happens
+            print('It seems the models have produced erroneous results. Please try again with a different image. Continuing with empty prompt.')
+            return [], []
+
+
+        return character_vector, nouns
+
+    def generate_text(self, prompt, include_prompt = True, n_context_scene = 0):
         
         text = ''
         if self.in_context_learing:

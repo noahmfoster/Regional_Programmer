@@ -50,7 +50,7 @@ def get_models(model_path = None):
     # pretrained clip model and processor for object detection
     clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
     processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
-    print('CLIP model loaded')
+    # print('CLIP model loaded')
     # custom transfer model for detecting characters
     if model_path is None:
         model_path  = os.path.dirname(os.path.abspath(__file__)) +"/"
