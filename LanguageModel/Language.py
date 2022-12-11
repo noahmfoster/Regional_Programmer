@@ -182,7 +182,10 @@ def evaluate(model, tokenizer, test_size = 600, device = 'cuda:0', ):
             losses.append(log_likelihood)
             
     
-    return torch.exp(torch.stack(losses )).mean().numpy()
+    return torch.exp(torch.stack(losses )).mean().cpu().numpy()
+    # check if result is on the right device
+    
+
         
 
 
