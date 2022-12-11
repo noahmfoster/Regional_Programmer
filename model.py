@@ -114,7 +114,7 @@ class AtRM():
         else:
             return output_w_prompt[prompt.len_prompt + garbage:]
 
-    def evalutate_lm(self, n = 100):
+    def evaluate_lm(self, n = 100):
         return evaluate(self.lm, self.tokenizer, test_size = n, device = self.device)
 
 
