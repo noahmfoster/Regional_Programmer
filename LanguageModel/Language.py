@@ -167,7 +167,6 @@ def evaluate(model, tokenizer, test_size = 600, device = 'cuda:0', ):
     tokenizer.pad_token = tokenizer.eos_token
 
     test_dataset_tokenized.set_format(type='torch', columns=['input_ids'])
-    test_dataset_tokenized = test_dataset_tokenized.remove_columns('length')
 
     loss_len = []
 
