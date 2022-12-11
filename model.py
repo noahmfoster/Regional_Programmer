@@ -116,7 +116,7 @@ class AtRM():
 
     def evalutate_lm(self, n = 100):
         if self.in_context_learning:
-            return evaluate(self.lm, self.tokenizer, n = n, device = self.device, data = self.context)
+            return evaluate(self.lm, self.tokenizer, n = n, device = self.device)
         else:
             print("Requires Data from Context in order to evaluate. Please run <model>.get_context() to collect data.")
 
