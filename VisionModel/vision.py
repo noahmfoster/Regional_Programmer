@@ -89,7 +89,6 @@ def run_vision_model(file, clip_model, processor, face_model, facecascade, nouns
                 imgtest, (x_, y_), (x_+w, y_+h), (255, 0, 255), 2)
 
             # resize the detected face to 224x224
-            # size = (image_width, image_height)
             size = (224, 224)
             roi = image_array[y_: y_ + h, x_: x_ + w]
             resized_image = cv2.resize(roi, size)
@@ -98,26 +97,24 @@ def run_vision_model(file, clip_model, processor, face_model, facecascade, nouns
             x = image.img_to_array(resized_image)
             x = np.expand_dims(x, axis=0)
             x = utils.preprocess_input(x, version=1)
-            # print(x)
 
             # making prediction
             predicted_prob = face_model.predict(x)
             character_vector += [class_list[predicted_prob[0].argmax()]]
-            print('character: ', class_list[predicted_prob[0].argmax()])
             
-        inputs = processor(text=nouns, images=imgtest, return_tensors="pt", padding=True)
+    inputs = processor(text=nouns, images=imgtest, return_tensors="pt", padding=True)
 
-        outputs = clip_model(**inputs)
-        logits_per_image = outputs.logits_per_image # this is the image-text similarity score
-        probs = logits_per_image.softmax(dim=1) # we can take the softmax to get the label probabilitie
-        #print(probs)
-        #ind = torch.topk(probs.flatten(), 3).indices
-        ind = probs.squeeze().argsort()[-5:]
-        sentence = [words[k] for k in ind]
-        plt.imshow(cv2.cvtColor(face_detect, cv2.COLOR_BGR2RGB))
-        plt.show()
-        print('character: ', character_vector)
-        print('objects: ', sentence)
-        
-        return character_vector, sentence # return the character and the top 5 objects detected in the image
+    outputs = clip_model(**inputs)
+    logits_per_image = outputs.logits_per_image # this is the image-text similarity score
+    probs = logits_per_image.softmax(dim=1) # we can take the softmax to get the label probabilitie
+    #print(probs)
+    #ind = torch.topk(probs.flatten(), 3).indices
+    ind = probs.squeeze().argsort()[-5:]
+    sentence = [data[k] for k in ind]
+    plt.imshow(cv2.cvtColor(face_detect, cv2.COLOR_BGR2RGB))
+    plt.show()
+    print('characters: ', character_vector)
+    print('objects: ', sentence)
+    
+    return character_vector, sentence # return the character and the top 5 objects detected in the image
 
