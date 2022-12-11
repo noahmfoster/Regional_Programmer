@@ -50,7 +50,7 @@ def get_language_model(model_name = 'trained', model_path = ""):
 def generate_text(prompt, model, tokenizer, device = 'cuda:0'):
     input_tokens = tokenizer.encode(prompt, return_tensors='pt').to(device)
     output = model.generate(input_tokens,
-        max_length=200 + len(input_tokens[0]),
+        max_length=500, #+ len(input_tokens[0]),
         num_beams=5,
         no_repeat_ngram_size=2,
         early_stopping=True,
@@ -176,15 +176,16 @@ def evaluate(model, tokenizer, test_size = 600, device = 'cuda:0', ):
         target_ids = input_ids.clone()
         target_ids[target_ids == tokenizer.pad_token_id] = -100
 
-        length = len(input_ids[0])
+        length = len(input_ids)
 
         with torch.no_grad():
             outputs = model(input_ids, labels=target_ids)
             loss, logits = outputs[:2]
             log_likelihood = loss * length
             loss_len.append(log_likelihood)
+            
     
-    return torch.exp(torch.stack(loss_len).sum() / sum([len(x[0]) for x in test_dataset_tokenized]))
+    return torch.exp(torch.stack(loss_len).sum() / sum([len(x) for x in test_dataset_tokenized]))
         
 
 
