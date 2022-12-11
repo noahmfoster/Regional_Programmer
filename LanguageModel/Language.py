@@ -50,7 +50,7 @@ def get_language_model(model_name = 'trained', model_path = ""):
 def generate_text(prompt, model, tokenizer, device = 'cuda:0'):
     input_tokens = tokenizer.encode(prompt, return_tensors='pt').to(device)
     output = model.generate(input_tokens,
-        max_length=500, #+ len(input_tokens[0]),
+        max_length=500 + len(input_tokens),
         num_beams=5,
         no_repeat_ngram_size=2,
         early_stopping=True,
@@ -148,7 +148,7 @@ def tokenize(element, tokenizer, max_length=128,):  # TODO: Best value for max l
 
 def evaluate(model, tokenizer, test_size = 600, device = 'cuda:0', ):
     try:
-        prompts_dataset = load_dataset('csv', data_files=data_path + 'test_prompts.csv', split='train')
+        prompts_dataset = load_dataset('csv', data_files=data_path + 'test_prompts.csv', split='train') #The only split, I separate test later
     except FileNotFoundError:
         print("Unable to find test data.")
         return 0
@@ -156,36 +156,33 @@ def evaluate(model, tokenizer, test_size = 600, device = 'cuda:0', ):
     prompts_dataset = prompts_dataset.remove_columns('Unnamed: 0')
     test_dataset = prompts_dataset.shuffle(seed=42).select(range(6000))
     test_dataset = test_dataset.train_test_split(train_size=0.9, seed=42)  # Reselecting the train and test sets
+
     test_dataset = test_dataset["test"]
 
-    assert test_size <= len(test_dataset), "Test size is larger than the test dataset."
-
+    tokenizer.pad_token = tokenizer.eos_token
     test_dataset_tokenized = test_dataset.map(
         lambda x: tokenize(x, max_length=128, tokenizer=tokenizer),
         batched=True, remove_columns=test_dataset.column_names
     )
-    tokenizer.pad_token = tokenizer.eos_token
 
     test_dataset_tokenized.set_format(type='torch', columns=['input_ids'])
 
-    loss_len = []
+    losses = []
 
-    for i in range(len(test_dataset_tokenized)):
+    for i in range(min(len(test_dataset_tokenized), test_size)):
         input_ids = test_dataset_tokenized[i]["input_ids"].to(device)
 
         target_ids = input_ids.clone()
         target_ids[target_ids == tokenizer.pad_token_id] = -100
 
-        length = len(input_ids)
-
         with torch.no_grad():
             outputs = model(input_ids, labels=target_ids)
-            loss, logits = outputs[:2]
-            log_likelihood = loss * length
-            loss_len.append(log_likelihood)
+            loss = outputs[0]
+            log_likelihood = loss # * length #Length is always 128 so not needed
+            losses.append(log_likelihood)
             
     
-    return torch.exp(torch.stack(loss_len).sum() / sum([len(x) for x in test_dataset_tokenized]))
+    return torch.exp(torch.stack(losses )).mean().numpy()
         
 
 
