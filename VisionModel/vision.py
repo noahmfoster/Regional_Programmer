@@ -110,7 +110,7 @@ def run_vision_model(file, clip_model, processor, face_model, facecascade, nouns
     #print(probs)
     #ind = torch.topk(probs.flatten(), 3).indices
     ind = probs.squeeze().argsort()[-5:]
-    sentence = [data[k] for k in ind]
+    sentence = [words[k] for k in ind]
     plt.imshow(cv2.cvtColor(face_detect, cv2.COLOR_BGR2RGB))
     plt.show()
     print('characters: ', character_vector)
