@@ -3,6 +3,10 @@ from transformers import GPT2LMHeadModel
 from transformers import GPT2TokenizerFast
 from transformers import GPT2LMHeadModel
 from transformers import GPTJForCausalLM
+from datasets import load_dataset
+
+
+import torch
 
 import os
 import numpy as np
@@ -43,15 +47,13 @@ def get_language_model(model_name = 'trained', model_path = ""):
     else:
         return get_tuned(model_path=model_path)
 
-
-def generate_text(prompt, model, tokenizer, max_length=200, device = 'cuda:0'):
+def generate_text(prompt, model, tokenizer, device = 'cuda:0'):
     input_tokens = tokenizer.encode(prompt, return_tensors='pt').to(device)
     output = model.generate(input_tokens,
-        max_length=max_length,
+        max_length=200 + len(input_tokens[0]),
         num_beams=5,
         no_repeat_ngram_size=2,
         early_stopping=True,
-        temperature=0.8
     )
     return tokenizer.decode(output[0], skip_special_tokens=True)
 
@@ -70,11 +72,20 @@ class ScenePrompt():
         text = " ".join([line for _, line in lines])
 
         if gen_nouns:
-            nouns += [word for (word, pos) in nltk.pos_tag(nltk.word_tokenize(text)) if pos[0] == 'N' and (pos != 'NNP')]
+            self.nouns += [word for (word, pos) in nltk.pos_tag(nltk.word_tokenize(text)) if pos[0] == 'N' and (pos != 'NNP')]
 
         self.lines = lines if lines else [(np.random.choice(self.characters, 1)[0] if self.characters else "Dwight", '')]
         
-    def to_text(self):
+    def to_text(self, gen_nouns = False):
+        if gen_nouns:
+            self.nouns += [
+                word for (word, pos) in nltk.pos_tag(
+                    nltk.word_tokenize(
+
+                        " ".join([line for _, line in self.lines])
+                    )) if pos[0] == 'N' and (pos != 'NNP')]
+
+
         output = f"Characters: " + ", ".join(set(self.characters)) + "\n\n"
 
         if self.nouns:
@@ -94,6 +105,12 @@ class ScenePrompt():
 
         return output
 
+    def __str__(self) -> str:
+        return self.to_text()
+
+    def __repr__(self) -> str:
+        return self.to_text()
+
 def get_prompts(data_file = data_path + 'The-Office-Lines-V4.csv'):
     data = pd.read_csv(data_file)
     data = data.drop("Unnamed: 6", axis=1)
@@ -111,3 +128,74 @@ def get_prompts(data_file = data_path + 'The-Office-Lines-V4.csv'):
         for i in range(n_scenes)
     ]
     return scenes
+
+def tokenize(element, tokenizer, max_length=128,):  # TODO: Best value for max length ?????
+    outputs = tokenizer(
+        element["Prompts"],
+        truncation=True,
+        max_length=max_length,
+        return_overflowing_tokens=False,
+        return_length=True,
+    )
+    input_batch = []
+    for length, input_ids in zip(outputs["length"], outputs["input_ids"]):
+        if length == max_length:
+            input_batch.append(input_ids)
+    return {"input_ids": input_batch}
+
+
+
+
+def evaluate(model, tokenizer, test_size = 600, device = 'cuda:0', ):
+    try:
+        prompts_dataset = load_dataset('csv', data_files=data_path + 'test_prompts.csv', split='train')
+    except FileNotFoundError:
+        print("Unable to find test data.")
+        return 0
+    
+    prompts_dataset = prompts_dataset.remove_columns('Unnamed: 0')
+    test_dataset = prompts_dataset.shuffle(seed=42).select(range(6000))
+    test_dataset = test_dataset.train_test_split(train_size=0.9, seed=42)  # Reselecting the train and test sets
+    test_dataset = test_dataset["test"]
+
+    assert test_size <= len(test_dataset), "Test size is larger than the test dataset."
+
+    test_dataset_tokenized = test_dataset.map(
+        lambda x: tokenize(x, max_length=128, tokenizer=tokenizer),
+        batched=True, remove_columns=test_dataset.column_names
+    )
+    tokenizer.pad_token = tokenizer.eos_token
+
+    test_dataset_tokenized.set_format(type='torch', columns=['input_ids'])
+    test_dataset_tokenized = test_dataset_tokenized.remove_columns('length')
+
+    loss_len = []
+
+    for i in range(len(test_dataset_tokenized)):
+        input_ids = test_dataset_tokenized[i]["input_ids"].to(device)
+
+        target_ids = input_ids.clone()
+        target_ids[target_ids == tokenizer.pad_token_id] = -100
+
+        length = len(input_ids[0])
+
+        with torch.no_grad():
+            outputs = model(input_ids, labels=target_ids)
+            loss, logits = outputs[:2]
+            log_likelihood = loss * length
+            loss_len.append(log_likelihood)
+    
+    return torch.exp(torch.stack(loss_len).sum() / sum([len(x[0]) for x in test_dataset_tokenized]))
+        
+
+
+
+
+    
+    
+if __name__ == '__main__':
+    model, tokenizer = get_language_model('trained')
+    model.eval()
+
+    ppl = evaluate(model = model, tokenizer = tokenizer, test_size = 10, device = 'cpu')
+    print(ppl)
