@@ -180,7 +180,7 @@ def evaluate(model, tokenizer, test_size = 600, device = 'cuda:0', ):
 
         with torch.no_grad():
             outputs = model(input_ids, labels=target_ids)
-            loss, logits = outputs[:2]
+            loss = outputs[0]
             log_likelihood = loss * length
             loss_len.append(log_likelihood)
     
