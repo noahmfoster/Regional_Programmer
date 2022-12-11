@@ -28,7 +28,7 @@ def get_tuned(model_path = ""):
     return fine_tuned_model, tokenizer
 
 def get_GPTJ():
-    model = GPTJForCausalLM.from_pretrained("EleutherAI/gpt-j-6B")
+    model = GPTJForCausalLM.from_pretrained("EleutherAI/gpt-j-6B").half()
     tokenizer = GPT2TokenizerFast.from_pretrained("EleutherAI/gpt-j-6B")
     return model, tokenizer
 
@@ -48,13 +48,16 @@ def get_language_model(model_name = 'trained', model_path = ""):
         return get_tuned(model_path=model_path)
 
 def generate_text(prompt, model, tokenizer, device = 'cuda:0'):
-    input_tokens = tokenizer.encode(prompt, return_tensors='pt').to(device)
-    output = model.generate(input_tokens,
-        max_length=500 + len(input_tokens),
-        num_beams=5,
-        no_repeat_ngram_size=2,
-        early_stopping=True,
-    )
+    try:
+        input_tokens = tokenizer.encode(prompt, return_tensors='pt').to(device)
+        output = model.generate(input_tokens,
+            max_length=500 + len(input_tokens),
+            num_beams=5,
+            no_repeat_ngram_size=2,
+            early_stopping=True,
+        )
+    except RuntimeError:
+        print("Model couldn't handle lenght of prompt. Please try again with fewer context scenes (or just try again and hope that it randomly chooses short scenes).")
     return tokenizer.decode(output[0], skip_special_tokens=True)
 
 class ScenePrompt():
