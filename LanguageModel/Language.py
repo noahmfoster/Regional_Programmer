@@ -189,11 +189,6 @@ def evaluate(model, tokenizer, test_size = 600, device = 'cuda:0', ):
     # check if result is on the right device
     
 
-        
-
-
-
-
     
     
 if __name__ == '__main__':
